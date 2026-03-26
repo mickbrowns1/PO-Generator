@@ -84,6 +84,40 @@ export function countOverridesInSubtree(
   return count;
 }
 
+export function deepMerge(target: ConfigObject, source: ConfigObject): ConfigObject {
+  const result = { ...target };
+  for (const key of Object.keys(source)) {
+    if (
+      key in result &&
+      result[key] !== null &&
+      typeof result[key] === "object" &&
+      !Array.isArray(result[key]) &&
+      source[key] !== null &&
+      typeof source[key] === "object" &&
+      !Array.isArray(source[key])
+    ) {
+      result[key] = deepMerge(
+        result[key] as ConfigObject,
+        source[key] as ConfigObject
+      );
+    } else {
+      result[key] = source[key];
+    }
+  }
+  return result;
+}
+
+export function buildFinalOutput(
+  overrides: OverridesMap,
+  customBlocks: ConfigObject[]
+): ConfigObject {
+  let result = buildNestedOverrides(overrides);
+  for (const block of customBlocks) {
+    result = deepMerge(result, block);
+  }
+  return result;
+}
+
 export function formatPath(path: string): string {
   const parts = path.split(".");
   return parts[parts.length - 1];

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ConfigObject, ConfigValue, OverridesMap } from "@/lib/types";
+import { ConfigObject, ConfigValue, OverridesMap, CustomBlock } from "@/lib/types";
 import { defaultConfig } from "@/lib/configSchema";
 import { getValueAtPath } from "@/lib/utils";
 import SearchBar from "@/components/SearchBar";
@@ -12,9 +12,12 @@ import JsonExport from "@/components/JsonExport";
 import ImportConfig from "@/components/ImportConfig";
 import CustomOverride from "@/components/CustomOverride";
 
+let blockIdCounter = 0;
+
 export default function Home() {
   const [config, setConfig] = useState<ConfigObject>(defaultConfig);
   const [overrides, setOverrides] = useState<OverridesMap>({});
+  const [customBlocks, setCustomBlocks] = useState<CustomBlock[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingPath, setEditingPath] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
@@ -40,17 +43,26 @@ export default function Home() {
 
   const handleClearAll = useCallback(() => {
     setOverrides({});
+    setCustomBlocks([]);
   }, []);
 
   const handleImport = useCallback((newConfig: ConfigObject) => {
     setConfig(newConfig);
     setOverrides({});
+    setCustomBlocks([]);
     setShowImport(false);
   }, []);
 
-  const handleCustomOverride = useCallback((path: string, value: ConfigValue) => {
-    setOverrides((prev) => ({ ...prev, [path]: value }));
+  const handleAddCustomBlock = useCallback((label: string, json: ConfigObject) => {
+    setCustomBlocks((prev) => [
+      ...prev,
+      { id: `block-${++blockIdCounter}`, label, json },
+    ]);
     setShowCustom(false);
+  }, []);
+
+  const handleRemoveCustomBlock = useCallback((id: string) => {
+    setCustomBlocks((prev) => prev.filter((b) => b.id !== id));
   }, []);
 
   return (
@@ -84,6 +96,7 @@ export default function Home() {
               onClick={() => {
                 setConfig(defaultConfig);
                 setOverrides({});
+                setCustomBlocks([]);
                 setSearchQuery("");
               }}
               className="px-3 py-1.5 text-xs bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
@@ -123,18 +136,20 @@ export default function Home() {
                   onClick={() => setShowCustom(true)}
                   className="px-2.5 py-1 text-xs bg-purple-600/20 text-purple-300 rounded hover:bg-purple-600/30 border border-purple-600/40 transition-colors"
                 >
-                  + Custom Override
+                  + Custom Block
                 </button>
               </div>
               <OverridePanel
                 overrides={overrides}
+                customBlocks={customBlocks}
                 config={config}
                 onEditOverride={handleEditNode}
                 onRemoveOverride={handleRemoveOverride}
+                onRemoveCustomBlock={handleRemoveCustomBlock}
                 onClearAll={handleClearAll}
               />
             </div>
-            <JsonExport overrides={overrides} />
+            <JsonExport overrides={overrides} customBlocks={customBlocks} />
           </div>
         </div>
       </div>
@@ -161,7 +176,7 @@ export default function Home() {
 
       {showCustom && (
         <CustomOverride
-          onSave={handleCustomOverride}
+          onSave={handleAddCustomBlock}
           onClose={() => setShowCustom(false)}
         />
       )}

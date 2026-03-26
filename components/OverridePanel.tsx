@@ -1,33 +1,38 @@
 "use client";
 
-import { ConfigObject, ConfigValue, OverridesMap } from "@/lib/types";
-import { getValueAtPath, formatValue, formatPath } from "@/lib/utils";
+import { ConfigObject, ConfigValue, OverridesMap, CustomBlock } from "@/lib/types";
+import { getValueAtPath, formatValue } from "@/lib/utils";
 
 interface OverridePanelProps {
   overrides: OverridesMap;
+  customBlocks: CustomBlock[];
   config: ConfigObject;
   onEditOverride: (path: string, value: ConfigValue) => void;
   onRemoveOverride: (path: string) => void;
+  onRemoveCustomBlock: (id: string) => void;
   onClearAll: () => void;
 }
 
 export default function OverridePanel({
   overrides,
+  customBlocks,
   config,
   onEditOverride,
   onRemoveOverride,
+  onRemoveCustomBlock,
   onClearAll,
 }: OverridePanelProps) {
   const overrideEntries = Object.entries(overrides);
+  const totalCount = overrideEntries.length + customBlocks.length;
 
-  if (overrideEntries.length === 0) {
+  if (totalCount === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
         <svg className="w-12 h-12 mx-auto mb-3 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
         <p className="text-sm">No overrides yet</p>
-        <p className="text-xs mt-1">Click any setting in the tree to create an override</p>
+        <p className="text-xs mt-1">Click any setting in the tree or add a custom block</p>
       </div>
     );
   }
@@ -36,7 +41,7 @@ export default function OverridePanel({
     <div>
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs text-gray-400">
-          {overrideEntries.length} override{overrideEntries.length !== 1 ? "s" : ""}
+          {totalCount} item{totalCount !== 1 ? "s" : ""}
         </span>
         <button
           onClick={onClearAll}
@@ -46,6 +51,7 @@ export default function OverridePanel({
         </button>
       </div>
       <div className="space-y-1">
+        {/* Config overrides */}
         {overrideEntries.map(([path, newValue]) => {
           const originalValue = getValueAtPath(config, path);
           const isCustom = originalValue === undefined;
@@ -93,6 +99,34 @@ export default function OverridePanel({
             </div>
           );
         })}
+
+        {/* Custom JSON blocks */}
+        {customBlocks.map((block) => (
+          <div
+            key={block.id}
+            className="group flex items-center gap-2 px-3 py-2 bg-blue-900/20 border border-blue-800/30 rounded-lg hover:bg-blue-900/30 transition-colors"
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-blue-300">{block.label}</span>
+                <span className="text-[10px] bg-blue-600/30 text-blue-300 px-1.5 py-0.5 rounded flex-shrink-0">
+                  block
+                </span>
+              </div>
+              <div className="text-[10px] text-gray-500 font-mono mt-0.5 truncate">
+                {Object.keys(block.json).join(", ")}
+              </div>
+            </div>
+            <button
+              onClick={() => onRemoveCustomBlock(block.id)}
+              className="opacity-0 group-hover:opacity-100 p-1 text-gray-500 hover:text-red-400 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

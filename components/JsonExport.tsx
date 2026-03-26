@@ -1,18 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { OverridesMap } from "@/lib/types";
-import { buildNestedOverrides } from "@/lib/utils";
+import { OverridesMap, CustomBlock } from "@/lib/types";
+import { buildFinalOutput } from "@/lib/utils";
 
 interface JsonExportProps {
   overrides: OverridesMap;
+  customBlocks: CustomBlock[];
 }
 
-export default function JsonExport({ overrides }: JsonExportProps) {
+export default function JsonExport({ overrides, customBlocks }: JsonExportProps) {
   const [copied, setCopied] = useState(false);
-  const nested = buildNestedOverrides(overrides);
-  const json = JSON.stringify(nested, null, 2);
-  const hasOverrides = Object.keys(overrides).length > 0;
+  const output = buildFinalOutput(
+    overrides,
+    customBlocks.map((b) => b.json)
+  );
+  const json = JSON.stringify(output, null, 2);
+  const hasContent = Object.keys(overrides).length > 0 || customBlocks.length > 0;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(json);
@@ -30,7 +34,7 @@ export default function JsonExport({ overrides }: JsonExportProps) {
     URL.revokeObjectURL(url);
   };
 
-  if (!hasOverrides) return null;
+  if (!hasContent) return null;
 
   return (
     <div>
@@ -53,7 +57,7 @@ export default function JsonExport({ overrides }: JsonExportProps) {
           </button>
         </div>
       </div>
-      <pre className="p-3 bg-gray-800/50 rounded-lg text-xs font-mono text-gray-300 overflow-auto max-h-64 border border-gray-700/50">
+      <pre className="p-3 bg-gray-800/50 rounded-lg text-xs font-mono text-gray-300 overflow-auto max-h-96 border border-gray-700/50">
         {json}
       </pre>
     </div>

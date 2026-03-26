@@ -1,98 +1,141 @@
 "use client";
 
 import { useState } from "react";
-import { ConfigValue } from "@/lib/types";
+import { ConfigObject } from "@/lib/types";
 
 interface CustomOverrideProps {
-  onSave: (path: string, value: ConfigValue) => void;
+  onSave: (label: string, json: ConfigObject) => void;
   onClose: () => void;
 }
 
-const SPAWNER_TEMPLATE = JSON.stringify(
-  [
-    {
-      path: "%ProgramFiles%\\\\Example\\\\app.exe",
-      publisher: "Example Corp",
-      description: "Example Application",
-    },
-  ],
-  null,
-  2
-);
-
-const TEMPLATES = [
+const TEMPLATES: { label: string; category: string; json: string }[] = [
   {
     label: "Spawners",
     category: "Special Images",
-    path: "specialImages.spawners",
-    value: SPAWNER_TEMPLATE,
+    json: JSON.stringify(
+      {
+        specialImages: {
+          spawners: [
+            {
+              path: "%ProgramFiles%\\\\Example\\\\app.exe",
+              publisher: "Example Corp",
+              description: "Example Application",
+            },
+          ],
+        },
+      },
+      null,
+      2
+    ),
   },
   {
     label: "Add Allowed SymLink",
     category: "Special Images",
-    path: "specialImages.add.allowedSymLinkWithSystemPath",
-    value: '[\n  "\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\example.exe"\n]',
+    json: JSON.stringify(
+      {
+        specialImages: {
+          add: {
+            allowedSymLinkWithSystemPath: [
+              "\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\example.exe",
+            ],
+          },
+        },
+      },
+      null,
+      2
+    ),
   },
   {
     label: "Remove Allowed SymLink",
     category: "Special Images",
-    path: "specialImages.remove.allowedSymLinkWithSystemPath",
-    value: '[\n  "\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\example.exe"\n]',
+    json: JSON.stringify(
+      {
+        specialImages: {
+          remove: {
+            allowedSymLinkWithSystemPath: [
+              "\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\example.exe",
+            ],
+          },
+        },
+      },
+      null,
+      2
+    ),
   },
   {
-    label: "Custom Path (blank)",
-    category: "Other",
-    path: "",
-    value: "",
+    label: "Event Log Channels & Providers",
+    category: "Deep Visibility",
+    json: JSON.stringify(
+      {
+        deepVisibility: {
+          eventLog: {
+            channels: {
+              Application: [],
+              Security: [],
+              System: [],
+              Setup: [],
+              "Forwarded Events": [],
+              "Microsoft-Windows-Bits-Client/Operational": [],
+            },
+            collectAllProviders: false,
+            providers: ["Microsoft-Windows-Bits-Client"],
+            levels: [],
+            sendOriginalXML: true,
+          },
+        },
+      },
+      null,
+      2
+    ),
   },
 ];
 
 const TEMPLATE_CATEGORIES = [...new Set(TEMPLATES.map((t) => t.category))];
 
 export default function CustomOverride({ onSave, onClose }: CustomOverrideProps) {
-  const [path, setPath] = useState("");
-  const [valueText, setValueText] = useState("");
+  const [label, setLabel] = useState("");
+  const [jsonText, setJsonText] = useState("");
   const [error, setError] = useState("");
 
   const applyTemplate = (template: (typeof TEMPLATES)[number]) => {
-    setPath(template.path);
-    setValueText(template.value);
+    setLabel(template.label);
+    setJsonText(template.json);
     setError("");
   };
 
   const handleSave = () => {
     setError("");
-    if (!path.trim()) {
-      setError("Path is required (e.g. specialImages.spawners)");
-      return;
-    }
 
-    const trimmed = valueText.trim();
+    const trimmed = jsonText.trim();
     if (!trimmed) {
-      setError("Value is required");
+      setError("JSON is required");
       return;
     }
 
-    let parsed: ConfigValue;
+    let parsed: unknown;
     try {
       parsed = JSON.parse(trimmed);
     } catch {
-      if (trimmed === "true") parsed = true;
-      else if (trimmed === "false") parsed = false;
-      else if (!isNaN(Number(trimmed)) && trimmed !== "") parsed = Number(trimmed);
-      else parsed = trimmed;
+      setError("Invalid JSON — must be a valid JSON object");
+      return;
     }
 
-    onSave(path.trim(), parsed);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      setError("JSON must be an object (e.g. { \"specialImages\": { ... } })");
+      return;
+    }
+
+    const autoLabel = label.trim() || Object.keys(parsed as ConfigObject).join(", ");
+    onSave(autoLabel, parsed as ConfigObject);
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
         <div className="p-4 border-b border-gray-700">
-          <h3 className="text-sm font-semibold text-gray-100">Add Custom Override</h3>
+          <h3 className="text-sm font-semibold text-gray-100">Add Custom Override Block</h3>
           <p className="text-xs text-gray-400 mt-1">
-            Add an override for settings not in the baseline config (e.g. specialImages, exclusion lists).
+            Paste a full JSON override block. It will be deep-merged into the final output.
           </p>
         </div>
 
@@ -119,29 +162,26 @@ export default function CustomOverride({ onSave, onClose }: CustomOverrideProps)
 
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wide">
-              Path (dot-notation)
+              Label (optional)
             </label>
             <input
               type="text"
-              value={path}
-              onChange={(e) => setPath(e.target.value)}
-              placeholder="e.g. specialImages.spawners"
-              className="mt-1 w-full p-2 bg-gray-800 border border-gray-600 rounded text-sm font-mono text-gray-100 placeholder-gray-600 focus:outline-none focus:border-purple-500"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="e.g. Cymulate Spawners"
+              className="mt-1 w-full p-2 bg-gray-800 border border-gray-600 rounded text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-purple-500"
             />
-            <p className="text-[10px] text-gray-600 mt-1">
-              Multiple overrides under the same parent (e.g. specialImages.spawners + specialImages.add.allowedSymLinkWithSystemPath) will be merged in the JSON output.
-            </p>
           </div>
 
           <div>
             <label className="text-xs text-gray-500 uppercase tracking-wide">
-              Value (JSON or primitive)
+              JSON Override Block
             </label>
             <textarea
-              value={valueText}
-              onChange={(e) => setValueText(e.target.value)}
-              placeholder={'e.g. true, 42, "hello", or [\n  { "path": "...", "publisher": "..." }\n]'}
-              rows={10}
+              value={jsonText}
+              onChange={(e) => setJsonText(e.target.value)}
+              placeholder={'{\n  "specialImages": {\n    "spawners": [\n      {\n        "path": "...",\n        "publisher": "...",\n        "description": "..."\n      }\n    ]\n  }\n}'}
+              rows={14}
               className="mt-1 w-full p-2 bg-gray-800 border border-gray-600 rounded text-sm font-mono text-gray-100 placeholder-gray-600 focus:outline-none focus:border-purple-500 resize-y"
             />
           </div>
@@ -160,7 +200,7 @@ export default function CustomOverride({ onSave, onClose }: CustomOverrideProps)
             onClick={handleSave}
             className="px-4 py-1.5 text-sm text-white bg-purple-600 rounded hover:bg-purple-500"
           >
-            Add Override
+            Add Block
           </button>
         </div>
       </div>

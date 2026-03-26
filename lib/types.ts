@@ -15,3 +15,9 @@ export type Override = {
 };
 
 export type OverridesMap = Record<string, ConfigValue>;
+
+export type CustomBlock = {
+  id: string;
+  label: string;
+  json: ConfigObject;
+};
