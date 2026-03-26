@@ -1,69 +1,108 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ConfigObject, ConfigValue, OverridesMap, CustomBlock } from "@/lib/types";
+import { ConfigObject, CustomBlock } from "@/lib/types";
 import { defaultConfig } from "@/lib/configSchema";
-import { getValueAtPath } from "@/lib/utils";
-import SearchBar from "@/components/SearchBar";
-import ConfigTree from "@/components/ConfigTree";
-import OverrideEditor from "@/components/OverrideEditor";
+import { linuxDefaultConfig } from "@/lib/linuxConfigSchema";
+import { macosDefaultConfig } from "@/lib/macosConfigSchema";
 import OverridePanel from "@/components/OverridePanel";
 import JsonExport from "@/components/JsonExport";
 import ImportConfig from "@/components/ImportConfig";
 import CustomOverride from "@/components/CustomOverride";
 
+type Platform = "windows" | "linux" | "macos";
+
+const PLATFORMS: { id: Platform; label: string; icon: string }[] = [
+  { id: "windows", label: "Windows", icon: "W" },
+  { id: "linux", label: "Linux", icon: "L" },
+  { id: "macos", label: "macOS", icon: "M" },
+];
+
+const DEFAULT_CONFIGS: Record<Platform, ConfigObject> = {
+  windows: defaultConfig,
+  linux: linuxDefaultConfig,
+  macos: macosDefaultConfig,
+};
+
+type PlatformState = {
+  config: ConfigObject;
+  customBlocks: CustomBlock[];
+};
+
 let blockIdCounter = 0;
 
 export default function Home() {
-  const [config, setConfig] = useState<ConfigObject>(defaultConfig);
-  const [overrides, setOverrides] = useState<OverridesMap>({});
-  const [customBlocks, setCustomBlocks] = useState<CustomBlock[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [editingPath, setEditingPath] = useState<string | null>(null);
+  const [platform, setPlatform] = useState<Platform>("windows");
+
+  const [platformStates, setPlatformStates] = useState<Record<Platform, PlatformState>>({
+    windows: { config: defaultConfig, customBlocks: [] },
+    linux: { config: linuxDefaultConfig, customBlocks: [] },
+    macos: { config: macosDefaultConfig, customBlocks: [] },
+  });
+
   const [showImport, setShowImport] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
 
-  const handleEditNode = useCallback((path: string, _value: ConfigValue) => {
-    setEditingPath(path);
-  }, []);
+  const currentState = platformStates[platform];
 
-  const handleSaveOverride = useCallback((path: string, value: ConfigValue) => {
-    setOverrides((prev) => ({ ...prev, [path]: value }));
-    setEditingPath(null);
-  }, []);
-
-  const handleRemoveOverride = useCallback((path: string) => {
-    setOverrides((prev) => {
-      const next = { ...prev };
-      delete next[path];
-      return next;
-    });
-    setEditingPath(null);
-  }, []);
+  const updatePlatformState = useCallback(
+    (updater: (prev: PlatformState) => PlatformState) => {
+      setPlatformStates((prev) => ({
+        ...prev,
+        [platform]: updater(prev[platform]),
+      }));
+    },
+    [platform]
+  );
 
   const handleClearAll = useCallback(() => {
-    setOverrides({});
-    setCustomBlocks([]);
-  }, []);
-
-  const handleImport = useCallback((newConfig: ConfigObject) => {
-    setConfig(newConfig);
-    setOverrides({});
-    setCustomBlocks([]);
-    setShowImport(false);
-  }, []);
-
-  const handleAddCustomBlock = useCallback((label: string, json: ConfigObject) => {
-    setCustomBlocks((prev) => [
+    updatePlatformState((prev) => ({
       ...prev,
-      { id: `block-${++blockIdCounter}`, label, json },
-    ]);
-    setShowCustom(false);
-  }, []);
+      customBlocks: [],
+    }));
+  }, [updatePlatformState]);
 
-  const handleRemoveCustomBlock = useCallback((id: string) => {
-    setCustomBlocks((prev) => prev.filter((b) => b.id !== id));
-  }, []);
+  const handleImport = useCallback(
+    (newConfig: ConfigObject) => {
+      updatePlatformState(() => ({
+        config: newConfig,
+        customBlocks: [],
+      }));
+      setShowImport(false);
+    },
+    [updatePlatformState]
+  );
+
+  const handleAddCustomBlock = useCallback(
+    (label: string, json: ConfigObject) => {
+      updatePlatformState((prev) => ({
+        ...prev,
+        customBlocks: [
+          ...prev.customBlocks,
+          { id: `block-${++blockIdCounter}`, label, json },
+        ],
+      }));
+      setShowCustom(false);
+    },
+    [updatePlatformState]
+  );
+
+  const handleRemoveCustomBlock = useCallback(
+    (id: string) => {
+      updatePlatformState((prev) => ({
+        ...prev,
+        customBlocks: prev.customBlocks.filter((b) => b.id !== id),
+      }));
+    },
+    [updatePlatformState]
+  );
+
+  const handleReset = useCallback(() => {
+    setPlatformStates((prev) => ({
+      ...prev,
+      [platform]: { config: DEFAULT_CONFIGS[platform], customBlocks: [] },
+    }));
+  }, [platform]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -81,7 +120,7 @@ export default function Home() {
                 SentinelOne Policy Override Generator
               </h1>
               <p className="text-xs text-gray-500">
-                Browse agent configuration and generate policy overrides
+                Generate policy overrides from templates or custom JSON
               </p>
             </div>
           </div>
@@ -93,12 +132,7 @@ export default function Home() {
               Import Config
             </button>
             <button
-              onClick={() => {
-                setConfig(defaultConfig);
-                setOverrides({});
-                setCustomBlocks([]);
-                setSearchQuery("");
-              }}
+              onClick={handleReset}
               className="px-3 py-1.5 text-xs bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
             >
               Reset
@@ -107,66 +141,73 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex-1 max-w-screen-2xl mx-auto w-full flex">
-        {/* Left Panel — Config Tree */}
-        <div className="w-1/2 xl:w-3/5 border-r border-gray-800 flex flex-col min-h-0">
-          <div className="p-3 border-b border-gray-800">
-            <SearchBar value={searchQuery} onChange={setSearchQuery} />
-          </div>
-          <div className="flex-1 overflow-y-auto p-2">
-            <ConfigTree
-              config={config}
-              overrides={overrides}
-              searchQuery={searchQuery}
-              onEditNode={handleEditNode}
-            />
-          </div>
-        </div>
-
-        {/* Right Panel — Overrides & Export */}
-        <div className="w-1/2 xl:w-2/5 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs text-gray-400 uppercase tracking-wide font-semibold">
-                  Active Overrides
-                </h2>
-                <button
-                  onClick={() => setShowCustom(true)}
-                  className="px-2.5 py-1 text-xs bg-purple-600/20 text-purple-300 rounded hover:bg-purple-600/30 border border-purple-600/40 transition-colors"
-                >
-                  + Custom Block
-                </button>
-              </div>
-              <OverridePanel
-                overrides={overrides}
-                customBlocks={customBlocks}
-                config={config}
-                onEditOverride={handleEditNode}
-                onRemoveOverride={handleRemoveOverride}
-                onRemoveCustomBlock={handleRemoveCustomBlock}
-                onClearAll={handleClearAll}
-              />
-            </div>
-            <JsonExport overrides={overrides} customBlocks={customBlocks} />
+      {/* Platform Tabs */}
+      <div className="border-b border-gray-800 bg-gray-950/60">
+        <div className="max-w-screen-2xl mx-auto px-4">
+          <div className="flex gap-0">
+            {PLATFORMS.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setPlatform(p.id)}
+                className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  platform === p.id
+                    ? "border-purple-500 text-purple-300"
+                    : "border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-700"
+                }`}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <span className={`w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center ${
+                    platform === p.id ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-500"
+                  }`}>
+                    {p.icon}
+                  </span>
+                  {p.label}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Modals */}
-      {editingPath && (
-        <OverrideEditor
-          path={editingPath}
-          originalValue={getValueAtPath(config, editingPath)}
-          currentValue={overrides[editingPath]}
-          onSave={handleSaveOverride}
-          onCancel={() => setEditingPath(null)}
-          onRemove={handleRemoveOverride}
-          isOverridden={editingPath in overrides}
-        />
-      )}
+      {/* Main Content — Custom Blocks Only */}
+      <div className="flex-1 max-w-screen-2xl mx-auto w-full flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 max-w-4xl mx-auto w-full">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs text-gray-400 uppercase tracking-wide font-semibold">
+                Override Blocks
+              </h2>
+              <button
+                onClick={() => setShowCustom(true)}
+                className="px-2.5 py-1 text-xs bg-purple-600/20 text-purple-300 rounded hover:bg-purple-600/30 border border-purple-600/40 transition-colors"
+              >
+                + Add Block
+              </button>
+            </div>
+            {currentState.customBlocks.length === 0 ? (
+              <div className="text-center py-12 border border-dashed border-gray-800 rounded-lg">
+                <p className="text-sm text-gray-500">No override blocks yet.</p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Click &quot;+ Add Block&quot; to select a template or paste custom JSON.
+                </p>
+              </div>
+            ) : (
+              <OverridePanel
+                overrides={{}}
+                customBlocks={currentState.customBlocks}
+                config={currentState.config}
+                onEditOverride={() => {}}
+                onRemoveOverride={() => {}}
+                onRemoveCustomBlock={handleRemoveCustomBlock}
+                onClearAll={handleClearAll}
+              />
+            )}
+          </div>
+          <JsonExport overrides={{}} customBlocks={currentState.customBlocks} />
+        </div>
+      </div>
 
+      {/* Modals */}
       {showImport && (
         <ImportConfig
           onImport={handleImport}
@@ -178,6 +219,7 @@ export default function Home() {
         <CustomOverride
           onSave={handleAddCustomBlock}
           onClose={() => setShowCustom(false)}
+          platform={platform}
         />
       )}
     </div>

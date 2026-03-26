@@ -8,9 +8,10 @@ interface ConfigTreeProps {
   overrides: OverridesMap;
   searchQuery: string;
   onEditNode: (path: string, value: ConfigValue) => void;
+  allowedSet?: Set<string>;
 }
 
-export default function ConfigTree({ config, overrides, searchQuery, onEditNode }: ConfigTreeProps) {
+export default function ConfigTree({ config, overrides, searchQuery, onEditNode, allowedSet }: ConfigTreeProps) {
   const entries = Object.entries(config).sort(([, a], [, b]) => {
     const aIsObj = a !== null && typeof a === "object" && !Array.isArray(a);
     const bIsObj = b !== null && typeof b === "object" && !Array.isArray(b);
@@ -31,6 +32,7 @@ export default function ConfigTree({ config, overrides, searchQuery, onEditNode 
           searchQuery={searchQuery}
           onEditNode={onEditNode}
           depth={0}
+          allowedSet={allowedSet}
         />
       ))}
     </div>

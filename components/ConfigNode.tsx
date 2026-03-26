@@ -13,6 +13,7 @@ interface ConfigNodeProps {
   onEditNode: (path: string, value: ConfigValue) => void;
   depth?: number;
   defaultExpanded?: boolean;
+  allowedSet?: Set<string>;
 }
 
 function matchesSearch(key: string, path: string, value: ConfigValue, query: string): boolean {
@@ -38,7 +39,11 @@ export default function ConfigNode({
   onEditNode,
   depth = 0,
   defaultExpanded = false,
+  allowedSet,
 }: ConfigNodeProps) {
+  // Hide nodes not in the allowed set (if one is provided)
+  if (allowedSet && !allowedSet.has(path)) return null;
+
   const [expanded, setExpanded] = useState(defaultExpanded || (!!searchQuery && matchesSearch(name, path, value, searchQuery)));
   const isLeaf = isLeafValue(value);
   const isOverridden = path in overrides;
@@ -79,6 +84,12 @@ export default function ConfigNode({
     );
   }
 
+  // For branch nodes, count how many allowed children exist
+  const allowedChildren = Object.entries(value as ConfigObject).filter(
+    ([key]) => !allowedSet || allowedSet.has(path ? `${path}.${key}` : key)
+  );
+  if (allowedChildren.length === 0) return null;
+
   return (
     <div>
       <button
@@ -100,12 +111,12 @@ export default function ConfigNode({
           </span>
         )}
         <span className="text-xs text-gray-600">
-          {Object.keys(value as ConfigObject).length}
+          {allowedChildren.length}
         </span>
       </button>
       {(expanded || shouldAutoExpand) && (
         <div>
-          {Object.entries(value as ConfigObject)
+          {allowedChildren
             .sort(([, a], [, b]) => {
               const aIsObj = a !== null && typeof a === "object" && !Array.isArray(a);
               const bIsObj = b !== null && typeof b === "object" && !Array.isArray(b);
@@ -123,6 +134,7 @@ export default function ConfigNode({
                 searchQuery={searchQuery}
                 onEditNode={onEditNode}
                 depth={depth + 1}
+                allowedSet={allowedSet}
               />
             ))}
         </div>
