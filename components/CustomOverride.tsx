@@ -282,7 +282,7 @@ export default function CustomOverride({ onSave, platform = "windows" }: CustomO
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex-1 min-h-0 flex flex-col">
       <div className="px-5 py-4 border-b border-s1-border flex-shrink-0">
         <p className="text-xs text-s1-text-muted">
           Select a template or paste custom JSON. Each block is deep-merged into the output.

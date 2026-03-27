@@ -41,6 +41,7 @@ export default function Home() {
   });
 
   const [showImport, setShowImport] = useState(false);
+  const [showHelp, setShowHelp] = useState(true);
 
   const currentState = platformStates[platform];
 
@@ -168,6 +169,38 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Instructions banner */}
+      {showHelp && (
+        <div className="border-b border-s1-border bg-s1-surface flex-shrink-0">
+          <div className="px-6 py-3 flex items-start gap-6">
+            <div className="flex items-center gap-5 flex-1 flex-wrap">
+              {[
+                { step: "1", text: "Select your platform using the tabs above" },
+                { step: "2", text: "Pick a template on the left, or paste custom JSON" },
+                { step: "3", text: "Click \u201c+ Add Block\u201d — it appears on the right" },
+                { step: "4", text: "Copy or download the merged JSON output" },
+              ].map(({ step, text }) => (
+                <div key={step} className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-s1-purple/20 border border-s1-purple/40 text-[10px] font-bold text-s1-purple flex items-center justify-center flex-shrink-0">
+                    {step}
+                  </span>
+                  <span className="text-xs text-s1-text-muted">{text}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowHelp(false)}
+              className="text-s1-text-muted hover:text-s1-text-secondary transition-colors flex-shrink-0 mt-0.5"
+              aria-label="Dismiss instructions"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Two-pane content */}
       <div className="flex-1 flex overflow-hidden">
