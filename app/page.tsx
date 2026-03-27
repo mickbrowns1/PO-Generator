@@ -7,7 +7,6 @@ import { linuxDefaultConfig } from "@/lib/linuxConfigSchema";
 import { macosDefaultConfig } from "@/lib/macosConfigSchema";
 import OverridePanel from "@/components/OverridePanel";
 import JsonExport from "@/components/JsonExport";
-import ImportConfig from "@/components/ImportConfig";
 import CustomOverride from "@/components/CustomOverride";
 
 type Platform = "windows" | "linux" | "macos";
@@ -40,7 +39,6 @@ export default function Home() {
     macos: { config: macosDefaultConfig, customBlocks: [] },
   });
 
-  const [showImport, setShowImport] = useState(false);
   const [showHelp, setShowHelp] = useState(true);
   const [blockLabel, setBlockLabel] = useState("");
   const [blockJson, setBlockJson] = useState("");
@@ -64,17 +62,6 @@ export default function Home() {
       customBlocks: [],
     }));
   }, [updatePlatformState]);
-
-  const handleImport = useCallback(
-    (newConfig: ConfigObject) => {
-      updatePlatformState(() => ({
-        config: newConfig,
-        customBlocks: [],
-      }));
-      setShowImport(false);
-    },
-    [updatePlatformState]
-  );
 
   const handleAddCustomBlock = useCallback(
     (label: string, json: ConfigObject) => {
@@ -149,12 +136,6 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowImport(true)}
-              className="px-4 py-2 text-sm bg-s1-surface text-s1-text-secondary rounded-lg hover:bg-s1-surface-hover hover:text-s1-text transition-all border border-s1-border"
-            >
-              Import
-            </button>
             <button
               onClick={handleReset}
               className="px-4 py-2 text-sm bg-s1-surface text-s1-text-secondary rounded-lg hover:bg-s1-surface-hover hover:text-s1-text transition-all border border-s1-border"
@@ -327,13 +308,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Modals */}
-      {showImport && (
-        <ImportConfig
-          onImport={handleImport}
-          onClose={() => setShowImport(false)}
-        />
-      )}
     </div>
   );
 }
