@@ -41,7 +41,6 @@ export default function Home() {
   });
 
   const [showImport, setShowImport] = useState(false);
-  const [showCustom, setShowCustom] = useState(false);
 
   const currentState = platformStates[platform];
 
@@ -82,7 +81,6 @@ export default function Home() {
           { id: `block-${++blockIdCounter}`, label, json },
         ],
       }));
-      setShowCustom(false);
     },
     [updatePlatformState]
   );
@@ -105,7 +103,7 @@ export default function Home() {
   }, [platform]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Header */}
       <header className="border-b border-s1-border bg-s1-black/90 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -171,23 +169,42 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 max-w-screen-2xl mx-auto w-full flex flex-col min-h-0">
-        <div className="flex-1 overflow-y-auto p-6 space-y-8 max-w-4xl mx-auto w-full">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm text-s1-text-secondary uppercase tracking-wider font-semibold">
-                Override Blocks
-              </h2>
+      {/* Two-pane content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left pane — template picker */}
+        <div className="w-[360px] flex-shrink-0 border-r border-s1-border flex flex-col overflow-hidden bg-s1-bg">
+          <div className="px-5 py-3 border-b border-s1-border flex-shrink-0">
+            <h2 className="text-xs text-s1-text-secondary uppercase tracking-wider font-semibold">Add Block</h2>
+          </div>
+          <CustomOverride
+            onSave={handleAddCustomBlock}
+            platform={platform}
+          />
+        </div>
+
+        {/* Right pane — blocks & output */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="px-6 py-3 border-b border-s1-border flex items-center justify-between flex-shrink-0">
+            <h2 className="text-xs text-s1-text-secondary uppercase tracking-wider font-semibold">
+              Override Blocks
+              {currentState.customBlocks.length > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 bg-s1-surface border border-s1-border rounded text-s1-text-muted normal-case tracking-normal">
+                  {currentState.customBlocks.length}
+                </span>
+              )}
+            </h2>
+            {currentState.customBlocks.length > 0 && (
               <button
-                onClick={() => setShowCustom(true)}
-                className="px-4 py-2 text-sm bg-s1-purple text-white rounded-lg hover:bg-s1-purple-hover transition-all shadow-sm shadow-s1-purple-glow font-medium"
+                onClick={handleClearAll}
+                className="text-xs text-red-500 hover:text-red-400 transition-colors"
               >
-                + Add Block
+                Clear All
               </button>
-            </div>
+            )}
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {currentState.customBlocks.length === 0 ? (
-              <div className="text-center py-16 border border-dashed border-s1-border rounded-lg bg-s1-bg">
+              <div className="text-center py-20 border border-dashed border-s1-border rounded-lg bg-s1-bg">
                 <div className="w-12 h-12 rounded-full bg-s1-surface border border-s1-border flex items-center justify-center mx-auto mb-4">
                   <svg className="w-6 h-6 text-s1-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -195,22 +212,24 @@ export default function Home() {
                 </div>
                 <p className="text-sm text-s1-text-secondary">No override blocks yet</p>
                 <p className="text-xs text-s1-text-muted mt-1.5">
-                  Click &quot;+ Add Block&quot; to select a template or paste custom JSON
+                  Select a template or paste JSON on the left to get started
                 </p>
               </div>
             ) : (
-              <OverridePanel
-                overrides={{}}
-                customBlocks={currentState.customBlocks}
-                config={currentState.config}
-                onEditOverride={() => {}}
-                onRemoveOverride={() => {}}
-                onRemoveCustomBlock={handleRemoveCustomBlock}
-                onClearAll={handleClearAll}
-              />
+              <>
+                <OverridePanel
+                  overrides={{}}
+                  customBlocks={currentState.customBlocks}
+                  config={currentState.config}
+                  onEditOverride={() => {}}
+                  onRemoveOverride={() => {}}
+                  onRemoveCustomBlock={handleRemoveCustomBlock}
+                  onClearAll={handleClearAll}
+                />
+                <JsonExport overrides={{}} customBlocks={currentState.customBlocks} />
+              </>
             )}
           </div>
-          <JsonExport overrides={{}} customBlocks={currentState.customBlocks} />
         </div>
       </div>
 
@@ -219,14 +238,6 @@ export default function Home() {
         <ImportConfig
           onImport={handleImport}
           onClose={() => setShowImport(false)}
-        />
-      )}
-
-      {showCustom && (
-        <CustomOverride
-          onSave={handleAddCustomBlock}
-          onClose={() => setShowCustom(false)}
-          platform={platform}
         />
       )}
     </div>

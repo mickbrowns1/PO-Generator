@@ -7,7 +7,6 @@ type Platform = "windows" | "linux" | "macos";
 
 interface CustomOverrideProps {
   onSave: (label: string, json: ConfigObject) => void;
-  onClose: () => void;
   platform?: Platform;
 }
 
@@ -100,6 +99,7 @@ const LINUX_TEMPLATES: Template[] = [
   { label: "Static Scan Max File Size", category: "Engines", json: j({ "static-scan_max-file-size": 31457280 }) },
   // Events
   { label: "Enable Event: elf_scan", category: "Events", json: j({ "events": { "elf_scan": { "enabled": true } } }) },
+  { label: "Kprobe Enable/Disable", category: "Events", json: j({ "kprobes_execve_enabled": true }) },
   { label: "Enable Event: kill", category: "Events", json: j({ "events": { "kill": { "enabled": true, "ebpf": true } } }) },
   { label: "Enable Event: file_chattr", category: "Events", json: j({ "events": { "file_chattr": { "enabled": true, "ebpf": true } } }) },
   { label: "Enable Event: file_chown", category: "Events", json: j({ "events": { "file_chown": { "enabled": true, "ebpf": true } } }) },
@@ -122,15 +122,22 @@ const LINUX_TEMPLATES: Template[] = [
   { label: "Forensics", category: "Forensics & Diagnostics", json: j({ "forensics_enabled": true, "forensics_maximum-daily-upload": 21474836480, "forensics_maximum-file-size-upload": 10737418240 }) },
   // Log Collector
   { label: "Log Collector", category: "Forensics & Diagnostics", json: j({ "log_collector": { "enabled": true, "batch_send_interval": 60, "batch_max_logs_count": 10000, "scan_interval": 30 } }) },
+  { label: "Log Collection Max Line Length", category: "Forensics & Diagnostics", json: j({ "log_collector": { "max_line_length": 65536 } }) },
+  { label: "Log File Max Size", category: "Forensics & Diagnostics", json: j({ "log_sentinel_max-size": 10485760 }) },
+  { label: "Remote Profiler Max File Size", category: "Forensics & Diagnostics", json: j({ "profiler-max_file_size": 104857600 }) },
   { label: "Auto Dump Collection", category: "Forensics & Diagnostics", json: j({ "auto_dump_collection_enabled": true, "auto_dump_collection_throttle_interval": 240 }) },
   // Health Center
   { label: "Health Center", category: "Forensics & Diagnostics", json: j({ "health_center": { "enabled": true, "connectivity": { "enabled": true, "interval": 1800 }, "disk_metrics": { "enabled": true, "interval": 86400 } } }) },
   // Resource Limits
   { label: "Memory Limits", category: "Resource Limits", json: j({ "resource_memory-limit": 5368709120, "resource_memory-limit-percent": 10, "resource_memory-monitor-mode": "s1-agent" }) },
+  { label: "CPU Limit (Solaris)", category: "Resource Limits", json: j({ "resource_cpu-limit": 25 }) },
+  { label: "CPU Limit (Irix)", category: "Resource Limits", json: j({ "resource_cpu_limit_irix": 100 }) },
+  { label: "Perf Buffer Size", category: "Resource Limits", json: j({ "perf_buffer-size": 4096 }) },
   // File Monitoring
   { label: "File Read Watch List", category: "File Monitoring", json: j({ "file_read_files_watch_list": ["/etc/shadow", "/etc/hosts", "/etc/ssh/ssh_config", "/root/.ssh/id_*", "/home/*/.ssh/id_*"] }) },
   { label: "File Read Extended Watch List", category: "File Monitoring", json: j({ "file_read_extended_monitoring_enabled": true, "file_read_extended_files_watch_list": ["/etc/passwd", "/etc/group", "/etc/sudoers"] }) },
   { label: "File Integrity Monitoring", category: "File Monitoring", json: j({ "file_integrity_enabled": true }) },
+  { label: "Mount Type Exclusions", category: "File Monitoring", json: j({ "mounts_excluded-types": ["nfs", "cifs", "tmpfs"] }) },
   // RSO
   { label: "Remote Script Orchestration", category: "Remote Operations", json: j({ "rso_enabled": true, "rso_daily-upload-limit": 524288000, "rso_daily-download-limit": 524288000 }) },
   { label: "Remote Shell", category: "Remote Operations", json: j({ "remote_shell_enabled": true }) },
@@ -148,6 +155,12 @@ const LINUX_TEMPLATES: Template[] = [
   { label: "Scan On Rename", category: "Engines", json: j({ "scan-on-rename": true }) },
   // Informational Alerts
   { label: "Informational Alerts", category: "Telemetry", json: j({ "informational_alerts_on": true, "informational_alerts_per_day": 4, "informational_alerts_verbosity_level": 2 }) },
+  // Indicators & Detectors
+  { label: "Detector Override (Lua)", category: "Indicators & Detectors", json: j({ "detectors": { "EXAMPLE_DETECTOR_NAME": { "enabled": true, "verdict": "DETECT" } } }) },
+  // Communication
+  { label: "Keep-Alive Interval & Fail Count", category: "Communication", json: j({ "keepAliveInterval": 30, "keepAliveFailCount": 8 }) },
+  { label: "Proxy Config", category: "Communication", json: j({ "communicatorConfig": { "forceProxy": true, "telemetry": true } }) },
+  { label: "DLP Settings (Support-only)", category: "Communication", json: j({ "dlp": { "enabled": false } }) },
 ];
 
 // ─── macOS Templates ─────────────────────────────────────────────────
@@ -170,6 +183,7 @@ const MACOS_TEMPLATES: Template[] = [
   { label: "Detection Ignore Categories", category: "Detection", json: j({ Detection: { IgnoreDownloaders: false, IgnoreHackTools: false, IgnoreMiners: false, IgnorePackers: false, IgnorePUPs: false, IgnoreSuspiciousTools: false } }) },
   { label: "Informational Alerts", category: "Detection", json: j({ Detection: { InformationalAlertsEnabled: true, InformationalAlertsPerDay: 4, InformationalAlertsVerbosityLevelThreshold: 2 } }) },
   { label: "Preemptive Block", category: "Detection", json: j({ Detection: { StaticAIPreemptiveBlock: true } }) },
+  { label: "Scan On Write", category: "Detection", json: j({ Detection: { ScanOnWrite: true } }) },
   { label: "Signatures DB", category: "Detection", json: j({ Detection: { SignaturesDB: true } }) },
   { label: "Threat Logs", category: "Detection", json: j({ Detection: { ThreatLogsEnabled: true, ThreatLogsAggregationTimeInterval: 120, ThreatLogsUploadSizeLimit: 10485760 } }) },
   // Device Control
@@ -177,6 +191,7 @@ const MACOS_TEMPLATES: Template[] = [
   // Firewall
   { label: "Firewall Settings", category: "Firewall", json: j({ Firewall: { Enabled: true, LocationAware: true, Log: true, Report: true, SupportFQDNRules: true } }) },
   { label: "Allow PF Filtering", category: "Firewall", json: j({ Firewall: { AllowPFFiltering: true } }) },
+  { label: "Allow Network Extension Load", category: "Firewall", json: j({ Firewall: { AllowNetworkExtensionLoad: true } }) },
   // Agent UI
   { label: "Agent UI — Show / Hide", category: "Agent UI", json: j({ AgentUI: { ShowUI: true, ShowThreatsNotifications: true, ShowSuspiciousThreats: true, ShowDeviceControlNotifications: true, ShowDeviceControlEvents: false, ShowAutomaticExternalVolumeScans: true } }) },
   { label: "Agent UI Capabilities", category: "Agent UI", json: j({ AgentUI: { Capabilities: { ContactSupport: false, DeviceControl: false, FunctionalProblem: false, QuarantinedFiles: true } } }) },
@@ -209,6 +224,12 @@ const MACOS_TEMPLATES: Template[] = [
   { label: "Location Reporting", category: "Network", json: j({ Location: { Enabled: true, ReportLocations: true } }) },
   // On Demand Scan
   { label: "Right-Click Scan", category: "Scanner", json: j({ OnDemandScan: { RightClickScanEnabled: true } }) },
+  // Indicators & Detectors
+  { label: "Detector Override (Lua)", category: "Indicators & Detectors", json: j({ detectors: { EXAMPLE_DETECTOR_NAME: { enabled: true, verdict: "DETECT" } } }) },
+  // Communication
+  { label: "Keep-Alive Interval & Fail Count", category: "Communication", json: j({ keepAliveInterval: 30, keepAliveFailCount: 8 }) },
+  { label: "Proxy Config", category: "Communication", json: j({ communicatorConfig: { forceProxy: true, telemetry: true } }) },
+  { label: "DLP Settings (Support-only)", category: "Communication", json: j({ dlp: { enabled: false } }) },
 ];
 
 const PLATFORM_TEMPLATES: Record<Platform, Template[]> = {
@@ -217,7 +238,7 @@ const PLATFORM_TEMPLATES: Record<Platform, Template[]> = {
   macos: MACOS_TEMPLATES,
 };
 
-export default function CustomOverride({ onSave, onClose, platform = "windows" }: CustomOverrideProps) {
+export default function CustomOverride({ onSave, platform = "windows" }: CustomOverrideProps) {
   const [label, setLabel] = useState("");
   const [jsonText, setJsonText] = useState("");
   const [error, setError] = useState("");
@@ -255,82 +276,76 @@ export default function CustomOverride({ onSave, onClose, platform = "windows" }
 
     const autoLabel = label.trim() || Object.keys(parsed as ConfigObject).join(", ");
     onSave(autoLabel, parsed as ConfigObject);
+    setLabel("");
+    setJsonText("");
+    setError("");
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-        <div className="p-4 border-b border-gray-700">
-          <h3 className="text-sm font-semibold text-gray-100">Add Custom Override Block</h3>
-          <p className="text-xs text-gray-400 mt-1">
-            Paste a full JSON override block. It will be deep-merged into the final output.
-          </p>
-        </div>
+    <div className="h-full flex flex-col">
+      <div className="px-5 py-4 border-b border-s1-border flex-shrink-0">
+        <p className="text-xs text-s1-text-muted">
+          Select a template or paste custom JSON. Each block is deep-merged into the output.
+        </p>
+      </div>
 
-        <div className="p-4 space-y-3 overflow-y-auto flex-1">
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wide">Templates</label>
-            {categories.map((category) => (
-              <div key={category} className="mt-2">
-                <span className="text-[10px] text-gray-600 uppercase tracking-wider">{category}</span>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {templates.filter((t) => t.category === category).sort((a, b) => a.label.localeCompare(b.label)).map((t) => (
-                    <button
-                      key={t.label}
-                      onClick={() => applyTemplate(t)}
-                      className="px-2 py-1 text-xs bg-gray-800 text-gray-300 rounded hover:bg-gray-700 border border-gray-700"
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+        <div>
+          <span className="text-xs text-s1-text-muted uppercase tracking-wider font-semibold">Templates</span>
+          {categories.map((category) => (
+            <div key={category} className="mt-3">
+              <span className="text-[10px] text-s1-text-muted uppercase tracking-wider">{category}</span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {templates.filter((t) => t.category === category).sort((a, b) => a.label.localeCompare(b.label)).map((t) => (
+                  <button
+                    key={t.label}
+                    onClick={() => applyTemplate(t)}
+                    className="px-2.5 py-1 text-xs bg-s1-surface text-s1-text-secondary rounded hover:bg-s1-surface-hover hover:text-s1-text border border-s1-border transition-colors"
+                  >
+                    {t.label}
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
-
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wide">
-              Label (optional)
-            </label>
-            <input
-              type="text"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              placeholder="e.g. Custom Override"
-              className="mt-1 w-full p-2 bg-gray-800 border border-gray-600 rounded text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-purple-500"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs text-gray-500 uppercase tracking-wide">
-              JSON Override Block
-            </label>
-            <textarea
-              value={jsonText}
-              onChange={(e) => setJsonText(e.target.value)}
-              placeholder={'{\n  "key": {\n    "setting": true\n  }\n}'}
-              rows={14}
-              className="mt-1 w-full p-2 bg-gray-800 border border-gray-600 rounded text-sm font-mono text-gray-100 placeholder-gray-600 focus:outline-none focus:border-purple-500 resize-y"
-            />
-          </div>
-
-          {error && <p className="text-xs text-red-400">{error}</p>}
+            </div>
+          ))}
         </div>
 
-        <div className="p-4 border-t border-gray-700 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 text-sm text-gray-400 hover:text-gray-200 bg-gray-800 rounded hover:bg-gray-700"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-1.5 text-sm text-white bg-purple-600 rounded hover:bg-purple-500"
-          >
-            Add Block
-          </button>
+        <div>
+          <label className="text-xs text-s1-text-muted uppercase tracking-wider font-semibold">
+            Label (optional)
+          </label>
+          <input
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="e.g. Custom Override"
+            className="mt-1.5 w-full px-3 py-2 bg-s1-surface border border-s1-border rounded-lg text-sm text-s1-text placeholder-s1-text-muted focus:outline-none focus:border-s1-purple transition-colors"
+          />
         </div>
+
+        <div>
+          <label className="text-xs text-s1-text-muted uppercase tracking-wider font-semibold">
+            JSON Override Block
+          </label>
+          <textarea
+            value={jsonText}
+            onChange={(e) => setJsonText(e.target.value)}
+            placeholder={'{\n  "key": {\n    "setting": true\n  }\n}'}
+            rows={12}
+            className="mt-1.5 w-full px-3 py-2 bg-s1-surface border border-s1-border rounded-lg text-sm font-mono text-s1-text placeholder-s1-text-muted focus:outline-none focus:border-s1-purple transition-colors resize-y"
+          />
+        </div>
+
+        {error && <p className="text-xs text-red-400">{error}</p>}
+      </div>
+
+      <div className="px-5 py-4 border-t border-s1-border flex-shrink-0">
+        <button
+          onClick={handleSave}
+          className="w-full py-2 text-sm font-medium text-white bg-s1-purple rounded-lg hover:bg-s1-purple-hover transition-all shadow-sm shadow-s1-purple-glow"
+        >
+          + Add Block
+        </button>
       </div>
     </div>
   );
