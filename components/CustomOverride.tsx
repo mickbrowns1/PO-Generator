@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { ConfigObject } from "@/lib/types";
 
 type Platform = "windows" | "linux" | "macos";
 
 interface CustomOverrideProps {
-  onSave: (label: string, json: ConfigObject) => void;
+  onApplyTemplate: (label: string, json: string) => void;
   platform?: Platform;
 }
 
@@ -238,114 +237,35 @@ const PLATFORM_TEMPLATES: Record<Platform, Template[]> = {
   macos: MACOS_TEMPLATES,
 };
 
-export default function CustomOverride({ onSave, platform = "windows" }: CustomOverrideProps) {
-  const [label, setLabel] = useState("");
-  const [jsonText, setJsonText] = useState("");
-  const [error, setError] = useState("");
-
+export default function CustomOverride({ onApplyTemplate, platform = "windows" }: CustomOverrideProps) {
   const templates = PLATFORM_TEMPLATES[platform];
   const categories = [...new Set(templates.map((t) => t.category))].sort((a, b) => a.localeCompare(b));
-
-  const applyTemplate = (template: Template) => {
-    setLabel(template.label);
-    setJsonText(template.json);
-    setError("");
-  };
-
-  const handleSave = () => {
-    setError("");
-
-    const trimmed = jsonText.trim();
-    if (!trimmed) {
-      setError("JSON is required");
-      return;
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(trimmed);
-    } catch {
-      setError("Invalid JSON — must be a valid JSON object");
-      return;
-    }
-
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      setError("JSON must be an object (e.g. { \"key\": { ... } })");
-      return;
-    }
-
-    const autoLabel = label.trim() || Object.keys(parsed as ConfigObject).join(", ");
-    onSave(autoLabel, parsed as ConfigObject);
-    setLabel("");
-    setJsonText("");
-    setError("");
-  };
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
       <div className="px-5 py-4 border-b border-s1-border flex-shrink-0">
         <p className="text-xs text-s1-text-muted">
-          Select a template or paste custom JSON. Each block is deep-merged into the output.
+          Click a template to load it into the editor.
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-        <div>
-          <span className="text-xs text-s1-text-muted uppercase tracking-wider font-semibold">Templates</span>
-          {categories.map((category) => (
-            <div key={category} className="mt-3">
-              <span className="text-[10px] text-s1-text-muted uppercase tracking-wider">{category}</span>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {templates.filter((t) => t.category === category).sort((a, b) => a.label.localeCompare(b.label)).map((t) => (
-                  <button
-                    key={t.label}
-                    onClick={() => applyTemplate(t)}
-                    className="px-2.5 py-1 text-xs bg-s1-surface text-s1-text-secondary rounded hover:bg-s1-surface-hover hover:text-s1-text border border-s1-border transition-colors"
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        {categories.map((category) => (
+          <div key={category}>
+            <span className="text-[10px] text-s1-text-muted uppercase tracking-wider font-semibold">{category}</span>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {templates.filter((t) => t.category === category).sort((a, b) => a.label.localeCompare(b.label)).map((t) => (
+                <button
+                  key={t.label}
+                  onClick={() => onApplyTemplate(t.label, t.json)}
+                  className="px-2.5 py-1 text-xs bg-s1-surface text-s1-text-secondary rounded hover:bg-s1-surface-hover hover:text-s1-text border border-s1-border transition-colors"
+                >
+                  {t.label}
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
-
-        <div>
-          <label className="text-xs text-s1-text-muted uppercase tracking-wider font-semibold">
-            Label (optional)
-          </label>
-          <input
-            type="text"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="e.g. Custom Override"
-            className="mt-1.5 w-full px-3 py-2 bg-s1-surface border border-s1-border rounded-lg text-sm text-s1-text placeholder-s1-text-muted focus:outline-none focus:border-s1-purple transition-colors"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs text-s1-text-muted uppercase tracking-wider font-semibold">
-            JSON Override Block
-          </label>
-          <textarea
-            value={jsonText}
-            onChange={(e) => setJsonText(e.target.value)}
-            placeholder={'{\n  "key": {\n    "setting": true\n  }\n}'}
-            rows={12}
-            className="mt-1.5 w-full px-3 py-2 bg-s1-surface border border-s1-border rounded-lg text-sm font-mono text-s1-text placeholder-s1-text-muted focus:outline-none focus:border-s1-purple transition-colors resize-y"
-          />
-        </div>
-
-        {error && <p className="text-xs text-red-400">{error}</p>}
-      </div>
-
-      <div className="px-5 py-4 border-t border-s1-border flex-shrink-0">
-        <button
-          onClick={handleSave}
-          className="w-full py-2 text-sm font-medium text-white bg-s1-purple rounded-lg hover:bg-s1-purple-hover transition-all shadow-sm shadow-s1-purple-glow"
-        >
-          + Add Block
-        </button>
+          </div>
+        ))}
       </div>
     </div>
   );

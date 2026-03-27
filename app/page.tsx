@@ -42,6 +42,9 @@ export default function Home() {
 
   const [showImport, setShowImport] = useState(false);
   const [showHelp, setShowHelp] = useState(true);
+  const [blockLabel, setBlockLabel] = useState("");
+  const [blockJson, setBlockJson] = useState("");
+  const [blockError, setBlockError] = useState("");
 
   const currentState = platformStates[platform];
 
@@ -85,6 +88,28 @@ export default function Home() {
     },
     [updatePlatformState]
   );
+
+  const handleApplyTemplate = useCallback((label: string, json: string) => {
+    setBlockLabel(label);
+    setBlockJson(json);
+    setBlockError("");
+  }, []);
+
+  const handleSaveBlock = useCallback(() => {
+    setBlockError("");
+    const trimmed = blockJson.trim();
+    if (!trimmed) { setBlockError("JSON is required"); return; }
+    let parsed: unknown;
+    try { parsed = JSON.parse(trimmed); } catch { setBlockError("Invalid JSON — must be a valid JSON object"); return; }
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      setBlockError("JSON must be an object");
+      return;
+    }
+    const autoLabel = blockLabel.trim() || Object.keys(parsed as ConfigObject).join(", ");
+    handleAddCustomBlock(autoLabel, parsed as ConfigObject);
+    setBlockLabel("");
+    setBlockJson("");
+  }, [blockJson, blockLabel, handleAddCustomBlock]);
 
   const handleRemoveCustomBlock = useCallback(
     (id: string) => {
@@ -204,19 +229,55 @@ export default function Home() {
 
       {/* Two-pane content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left pane — template picker */}
-        <div className="w-[360px] flex-shrink-0 border-r border-s1-border flex flex-col overflow-hidden bg-s1-bg">
+        {/* Left pane — template browser */}
+        <div className="w-[320px] flex-shrink-0 border-r border-s1-border flex flex-col overflow-hidden bg-s1-bg">
           <div className="px-5 py-3 border-b border-s1-border flex-shrink-0">
-            <h2 className="text-xs text-s1-text-secondary uppercase tracking-wider font-semibold">Add Block</h2>
+            <h2 className="text-xs text-s1-text-secondary uppercase tracking-wider font-semibold">Templates</h2>
           </div>
           <CustomOverride
-            onSave={handleAddCustomBlock}
+            onApplyTemplate={handleApplyTemplate}
             platform={platform}
           />
         </div>
 
-        {/* Right pane — blocks & output */}
+        {/* Right pane — editor + blocks + output */}
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* JSON editor */}
+          <div className="flex-shrink-0 border-b border-s1-border px-6 py-4 space-y-3">
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="text-xs text-s1-text-muted uppercase tracking-wider font-semibold">Label (optional)</label>
+                <input
+                  type="text"
+                  value={blockLabel}
+                  onChange={(e) => setBlockLabel(e.target.value)}
+                  placeholder="e.g. Custom Override"
+                  className="mt-1.5 w-full px-3 py-2 bg-s1-surface border border-s1-border rounded-lg text-sm text-s1-text placeholder-s1-text-muted focus:outline-none focus:border-s1-purple transition-colors"
+                />
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={handleSaveBlock}
+                  className="px-5 py-2 text-sm font-medium text-white bg-s1-purple rounded-lg hover:bg-s1-purple-hover transition-all shadow-sm shadow-s1-purple-glow whitespace-nowrap"
+                >
+                  + Add Block
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-s1-text-muted uppercase tracking-wider font-semibold">JSON Override Block</label>
+              <textarea
+                value={blockJson}
+                onChange={(e) => setBlockJson(e.target.value)}
+                placeholder={'{\n  "key": {\n    "setting": true\n  }\n}'}
+                rows={7}
+                className="mt-1.5 w-full px-3 py-2 bg-s1-surface border border-s1-border rounded-lg text-sm font-mono text-s1-text placeholder-s1-text-muted focus:outline-none focus:border-s1-purple transition-colors resize-y"
+              />
+            </div>
+            {blockError && <p className="text-xs text-red-400">{blockError}</p>}
+          </div>
+
+          {/* Blocks list */}
           <div className="px-6 py-3 border-b border-s1-border flex items-center justify-between flex-shrink-0">
             <h2 className="text-xs text-s1-text-secondary uppercase tracking-wider font-semibold">
               Override Blocks
@@ -237,7 +298,7 @@ export default function Home() {
           </div>
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {currentState.customBlocks.length === 0 ? (
-              <div className="text-center py-20 border border-dashed border-s1-border rounded-lg bg-s1-bg">
+              <div className="text-center py-16 border border-dashed border-s1-border rounded-lg bg-s1-bg">
                 <div className="w-12 h-12 rounded-full bg-s1-surface border border-s1-border flex items-center justify-center mx-auto mb-4">
                   <svg className="w-6 h-6 text-s1-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -245,7 +306,7 @@ export default function Home() {
                 </div>
                 <p className="text-sm text-s1-text-secondary">No override blocks yet</p>
                 <p className="text-xs text-s1-text-muted mt-1.5">
-                  Select a template or paste JSON on the left to get started
+                  Select a template on the left or paste JSON above to get started
                 </p>
               </div>
             ) : (
