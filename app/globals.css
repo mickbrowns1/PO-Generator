@@ -12,8 +12,8 @@
   --color-s1-purple-dim: rgba(123, 47, 190, 0.15);
   --color-s1-purple-glow: rgba(123, 47, 190, 0.25);
   --color-s1-text: #E8E8E8;
-  --color-s1-text-secondary: #888888;
-  --color-s1-text-muted: #555555;
+  --color-s1-text-secondary: #AAAAAA;
+  --color-s1-text-muted: #777777;
 }
 
 body {
