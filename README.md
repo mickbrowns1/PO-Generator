@@ -1,4 +1,4 @@
-# SentinelOne Policy Override Generator
+# POgo — S1 Policy Override Generator
 
 A browser-based tool for building SentinelOne agent Policy Override (PO) JSON. Select from a library of validated templates across Windows, Linux, and macOS, or paste custom JSON blocks — the tool deep-merges everything into a single ready-to-deploy output.
 

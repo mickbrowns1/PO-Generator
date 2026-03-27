@@ -141,10 +141,10 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-base font-semibold text-white tracking-tight">
-                Policy Override Generator
+                POgo
               </h1>
               <p className="text-xs text-s1-text-muted mt-0.5">
-                SentinelOne agent configuration overrides
+                S1 Policy Override Generator
               </p>
             </div>
           </div>

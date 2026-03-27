@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SentinelOne Policy Override Generator",
-  description: "Generate policy override JSON for SentinelOne agent configuration",
+  title: "POgo - S1 Policy Override Generator",
+  description: "POgo — Generate policy override JSON for SentinelOne agent configuration",
 };
 
 export default function RootLayout({
