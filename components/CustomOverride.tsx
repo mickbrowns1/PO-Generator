@@ -223,7 +223,7 @@ export default function CustomOverride({ onSave, onClose, platform = "windows" }
   const [error, setError] = useState("");
 
   const templates = PLATFORM_TEMPLATES[platform];
-  const categories = [...new Set(templates.map((t) => t.category))];
+  const categories = [...new Set(templates.map((t) => t.category))].sort((a, b) => a.localeCompare(b));
 
   const applyTemplate = (template: Template) => {
     setLabel(template.label);
@@ -274,7 +274,7 @@ export default function CustomOverride({ onSave, onClose, platform = "windows" }
               <div key={category} className="mt-2">
                 <span className="text-[10px] text-gray-600 uppercase tracking-wider">{category}</span>
                 <div className="mt-1 flex flex-wrap gap-1">
-                  {templates.filter((t) => t.category === category).map((t) => (
+                  {templates.filter((t) => t.category === category).sort((a, b) => a.label.localeCompare(b.label)).map((t) => (
                     <button
                       key={t.label}
                       onClick={() => applyTemplate(t)}

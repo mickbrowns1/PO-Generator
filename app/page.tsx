@@ -107,33 +107,33 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <header className="border-b border-s1-border bg-s1-black/90 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-9 h-9 rounded-lg bg-s1-purple flex items-center justify-center shadow-lg shadow-s1-purple-glow">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
               </svg>
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-gray-100">
-                SentinelOne Policy Override Generator
+              <h1 className="text-base font-semibold text-white tracking-tight">
+                Policy Override Generator
               </h1>
-              <p className="text-xs text-gray-500">
-                Generate policy overrides from templates or custom JSON
+              <p className="text-xs text-s1-text-muted mt-0.5">
+                SentinelOne agent configuration overrides
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setShowImport(true)}
-              className="px-3 py-1.5 text-xs bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
+              className="px-4 py-2 text-sm bg-s1-surface text-s1-text-secondary rounded-lg hover:bg-s1-surface-hover hover:text-s1-text transition-all border border-s1-border"
             >
-              Import Config
+              Import
             </button>
             <button
               onClick={handleReset}
-              className="px-3 py-1.5 text-xs bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700"
+              className="px-4 py-2 text-sm bg-s1-surface text-s1-text-secondary rounded-lg hover:bg-s1-surface-hover hover:text-s1-text transition-all border border-s1-border"
             >
               Reset
             </button>
@@ -142,22 +142,24 @@ export default function Home() {
       </header>
 
       {/* Platform Tabs */}
-      <div className="border-b border-gray-800 bg-gray-950/60">
-        <div className="max-w-screen-2xl mx-auto px-4">
+      <div className="border-b border-s1-border bg-s1-bg">
+        <div className="max-w-screen-2xl mx-auto px-6">
           <div className="flex gap-0">
             {PLATFORMS.map((p) => (
               <button
                 key={p.id}
                 onClick={() => setPlatform(p.id)}
-                className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-all ${
                   platform === p.id
-                    ? "border-purple-500 text-purple-300"
-                    : "border-transparent text-gray-500 hover:text-gray-300 hover:border-gray-700"
+                    ? "border-s1-purple text-white"
+                    : "border-transparent text-s1-text-muted hover:text-s1-text-secondary hover:border-s1-border-light"
                 }`}
               >
-                <span className="inline-flex items-center gap-2">
-                  <span className={`w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center ${
-                    platform === p.id ? "bg-purple-600 text-white" : "bg-gray-800 text-gray-500"
+                <span className="inline-flex items-center gap-2.5">
+                  <span className={`w-6 h-6 rounded text-[11px] font-bold flex items-center justify-center transition-all ${
+                    platform === p.id
+                      ? "bg-s1-purple text-white shadow-sm shadow-s1-purple-glow"
+                      : "bg-s1-surface text-s1-text-muted border border-s1-border"
                   }`}>
                     {p.icon}
                   </span>
@@ -169,26 +171,31 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Main Content — Custom Blocks Only */}
+      {/* Main Content */}
       <div className="flex-1 max-w-screen-2xl mx-auto w-full flex flex-col min-h-0">
-        <div className="flex-1 overflow-y-auto p-4 space-y-6 max-w-4xl mx-auto w-full">
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 max-w-4xl mx-auto w-full">
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs text-gray-400 uppercase tracking-wide font-semibold">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm text-s1-text-secondary uppercase tracking-wider font-semibold">
                 Override Blocks
               </h2>
               <button
                 onClick={() => setShowCustom(true)}
-                className="px-2.5 py-1 text-xs bg-purple-600/20 text-purple-300 rounded hover:bg-purple-600/30 border border-purple-600/40 transition-colors"
+                className="px-4 py-2 text-sm bg-s1-purple text-white rounded-lg hover:bg-s1-purple-hover transition-all shadow-sm shadow-s1-purple-glow font-medium"
               >
                 + Add Block
               </button>
             </div>
             {currentState.customBlocks.length === 0 ? (
-              <div className="text-center py-12 border border-dashed border-gray-800 rounded-lg">
-                <p className="text-sm text-gray-500">No override blocks yet.</p>
-                <p className="text-xs text-gray-600 mt-1">
-                  Click &quot;+ Add Block&quot; to select a template or paste custom JSON.
+              <div className="text-center py-16 border border-dashed border-s1-border rounded-lg bg-s1-bg">
+                <div className="w-12 h-12 rounded-full bg-s1-surface border border-s1-border flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-6 h-6 text-s1-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
+                <p className="text-sm text-s1-text-secondary">No override blocks yet</p>
+                <p className="text-xs text-s1-text-muted mt-1.5">
+                  Click &quot;+ Add Block&quot; to select a template or paste custom JSON
                 </p>
               </div>
             ) : (
