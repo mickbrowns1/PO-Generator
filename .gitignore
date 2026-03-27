@@ -1,9 +1,37 @@
+# Dependencies
 node_modules
+
+# Next.js
 /.next/
 /out/
 /build
-.DS_Store
-npm-debug.log*
-.env*.local
-*.tsbuildinfo
 next-env.d.ts
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment
+.env*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Claude Code
+.claude/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.env
