@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ConfigObject } from "@/lib/types";
 
 type Platform = "windows" | "linux" | "macos";
@@ -7,6 +8,8 @@ type Platform = "windows" | "linux" | "macos";
 interface CustomOverrideProps {
   onApplyTemplate: (label: string, json: string) => void;
   platform?: Platform;
+  savedTemplates?: { label: string; json: string }[];
+  onDeleteSavedTemplate?: (label: string) => void;
 }
 
 const j = (obj: object) => JSON.stringify(obj, null, 2);
@@ -122,7 +125,7 @@ const LINUX_TEMPLATES: Template[] = [
   { label: "Log Collector", category: "Forensics & Diagnostics", json: j({ "log_collector": { "enabled": true, "batch_send_interval": 60, "batch_max_logs_count": 10000, "scan_interval": 30 } }) },
   { label: "Log Collection Max Line Length", category: "Forensics & Diagnostics", json: j({ "log_collector": { "max_line_length": 65536 } }) },
   { label: "Log File Max Sizes", category: "Forensics & Diagnostics", json: j({ "log_addon_instance_max-size": 10485760, "log_addons_max-size": 20971520, "log_agent_max-size": 104857600, "log_communicator_max-size": 5242880, "log_detectors_max-size": 20971520, "log_firewall_max-size": 10485760, "log_network_max-size": 41943040, "log_orchestrator_max-size": 20971520, "log_perf_max-size": 104857600, "log_scanner_max-size": 20971520, "log_stats_max-size": 10485760 }) },
-  { label: "Log Min Level", category: "Forensics & Diagnostics", json: j({ "log_min-level": 1 }) },
+  { label: "Log Min Level (0=trace 1=debug 2=info 3=warn)", category: "Forensics & Diagnostics", json: j({ "log_min-level": 1 }) },
   { label: "Remote Profiler Max File Size", category: "Forensics & Diagnostics", json: j({ "profiler-max_file_size": 104857600 }) },
   { label: "Auto Dump Collection", category: "Forensics & Diagnostics", json: j({ "auto_dump_collection_enabled": true, "auto_dump_collection_throttle_interval": 240 }) },
   // Health Center
@@ -144,6 +147,9 @@ const LINUX_TEMPLATES: Template[] = [
   { label: "Auto File Upload", category: "Remote Operations", json: j({ "auto_file_upload_enabled": true, "auto_file_upload_max-file-size": 10737418240, "auto_file_upload_daily-limit": 53687091200 }) },
   // Dynamic Spawners
   { label: "Dynamic Spawners", category: "Security", json: j({ "dynamic_spawners": ["/usr/bin/example_app"] }) },
+  { label: "Spawners: BAS Tools", category: "Security", json: j({ "dynamic_spawners": ["/opt/cymulate/agent/cymulate-agent", "/opt/cymulate/agent/cymulate", "/opt/picus/security/picus-agent", "/opt/picus/security/picus", "/opt/attackiq/agent/attackiq-agent", "/opt/safebreach/agent/safebreach-hacker"] }) },
+  // Noisy detector silence preset
+  { label: "Detector Presets: Silence Common FPs", category: "Indicators & Detectors", json: j({ "detectors": { "access_credentials_lua": { "enabled": true, "verdict": "silent" }, "imds_request_lua": { "enabled": true, "verdict": "silent" }, "memory_dump_lua": { "enabled": true, "verdict": "silent" }, "ssh_lateral_movement_lua": { "enabled": true, "verdict": "silent" } } }) },
   // Telemetry
   { label: "Telemetry Performance", category: "Telemetry", json: j({ "telemetry_enabled": true, "telemetry_performance_enabled": true, "telemetry_performance_enabled_agent": true, "telemetry_performance_interval": 1 }) },
   // PAM
@@ -239,35 +245,97 @@ const PLATFORM_TEMPLATES: Record<Platform, Template[]> = {
   macos: MACOS_TEMPLATES,
 };
 
-export default function CustomOverride({ onApplyTemplate, platform = "windows" }: CustomOverrideProps) {
+export default function CustomOverride({ onApplyTemplate, platform = "windows", savedTemplates = [], onDeleteSavedTemplate }: CustomOverrideProps) {
+  const [search, setSearch] = useState("");
+
   const templates = PLATFORM_TEMPLATES[platform];
-  const categories = [...new Set(templates.map((t) => t.category))].sort((a, b) => a.localeCompare(b));
+
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? templates.filter((t) => t.label.toLowerCase().includes(q) || t.category.toLowerCase().includes(q))
+    : templates;
+  const categories = [...new Set(filtered.map((t) => t.category))].sort((a, b) => a.localeCompare(b));
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
-      <div className="px-5 py-4 border-b border-s1-border flex-shrink-0">
-        <p className="text-xs text-s1-text-muted">
-          Click a template to load it into the editor.
-        </p>
+      {/* Search */}
+      <div className="px-5 py-3 border-b border-s1-border flex-shrink-0">
+        <div className="relative">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-s1-text-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Filter templates…"
+            className="w-full pl-8 pr-3 py-1.5 bg-s1-surface border border-s1-border rounded-lg text-xs text-s1-text placeholder-s1-text-muted focus:outline-none focus:border-s1-purple transition-colors"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-s1-text-muted hover:text-s1-text"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-        {categories.map((category) => (
-          <div key={category}>
-            <span className="text-[10px] text-s1-text-muted uppercase tracking-wider font-semibold">{category}</span>
+        {/* My Templates */}
+        {savedTemplates.length > 0 && !q && (
+          <div>
+            <span className="text-[10px] text-s1-cyan uppercase tracking-wider font-semibold">My Templates</span>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {templates.filter((t) => t.category === category).sort((a, b) => a.label.localeCompare(b.label)).map((t) => (
-                <button
-                  key={t.label}
-                  onClick={() => onApplyTemplate(t.label, t.json)}
-                  className="px-2.5 py-1 text-xs bg-s1-surface text-s1-text-secondary rounded hover:bg-s1-surface-hover hover:text-s1-text border border-s1-border transition-colors"
-                >
-                  {t.label}
-                </button>
+              {savedTemplates.map((t) => (
+                <div key={t.label} className="group relative flex">
+                  <button
+                    onClick={() => onApplyTemplate(t.label, t.json)}
+                    className="px-2.5 py-1 pr-6 text-xs bg-s1-surface text-s1-cyan rounded hover:bg-s1-surface-hover border border-s1-cyan/30 transition-colors"
+                  >
+                    {t.label}
+                  </button>
+                  {onDeleteSavedTemplate && (
+                    <button
+                      onClick={() => onDeleteSavedTemplate(t.label)}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-s1-text-muted hover:text-red-400 transition-all"
+                      title="Remove saved template"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
-        ))}
+        )}
+
+        {/* Category templates */}
+        {categories.length === 0 ? (
+          <p className="text-xs text-s1-text-muted text-center py-4">No templates match &ldquo;{search}&rdquo;</p>
+        ) : (
+          categories.map((category) => (
+            <div key={category}>
+              <span className="text-[10px] text-s1-text-muted uppercase tracking-wider font-semibold">{category}</span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {filtered.filter((t) => t.category === category).sort((a, b) => a.label.localeCompare(b.label)).map((t) => (
+                  <button
+                    key={t.label}
+                    onClick={() => onApplyTemplate(t.label, t.json)}
+                    className="px-2.5 py-1 text-xs bg-s1-surface text-s1-text-secondary rounded hover:bg-s1-surface-hover hover:text-s1-text border border-s1-border transition-colors"
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

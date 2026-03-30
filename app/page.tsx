@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ConfigObject, CustomBlock } from "@/lib/types";
 import { defaultConfig } from "@/lib/configSchema";
 import { linuxDefaultConfig } from "@/lib/linuxConfigSchema";
@@ -8,6 +8,9 @@ import { macosDefaultConfig } from "@/lib/macosConfigSchema";
 import OverridePanel from "@/components/OverridePanel";
 import JsonExport from "@/components/JsonExport";
 import CustomOverride from "@/components/CustomOverride";
+
+type SavedTemplate = { label: string; json: string };
+type SavedTemplatesMap = Record<Platform, SavedTemplate[]>;
 
 type Platform = "windows" | "linux" | "macos";
 
@@ -43,6 +46,26 @@ export default function Home() {
   const [blockLabel, setBlockLabel] = useState("");
   const [blockJson, setBlockJson] = useState("");
   const [blockError, setBlockError] = useState("");
+
+  const [savedTemplates, setSavedTemplates] = useState<SavedTemplatesMap>({
+    windows: [],
+    linux: [],
+    macos: [],
+  });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("savedTemplates");
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<SavedTemplatesMap>;
+        setSavedTemplates((prev) => ({
+          windows: parsed.windows ?? prev.windows,
+          linux: parsed.linux ?? prev.linux,
+          macos: parsed.macos ?? prev.macos,
+        }));
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   const currentState = platformStates[platform];
 
@@ -115,25 +138,61 @@ export default function Home() {
     }));
   }, [platform]);
 
+  const handleMoveBlock = useCallback(
+    (id: string, direction: "up" | "down") => {
+      updatePlatformState((prev) => {
+        const blocks = [...prev.customBlocks];
+        const idx = blocks.findIndex((b) => b.id === id);
+        if (idx === -1) return prev;
+        if (direction === "up" && idx === 0) return prev;
+        if (direction === "down" && idx === blocks.length - 1) return prev;
+        const swap = direction === "up" ? idx - 1 : idx + 1;
+        [blocks[idx], blocks[swap]] = [blocks[swap], blocks[idx]];
+        return { ...prev, customBlocks: blocks };
+      });
+    },
+    [updatePlatformState]
+  );
+
+  const handleSaveAsTemplate = useCallback(
+    (id: string) => {
+      const block = currentState.customBlocks.find((b) => b.id === id);
+      if (!block) return;
+      setSavedTemplates((prev) => {
+        const existing = prev[platform];
+        if (existing.some((t) => t.label === block.label)) return prev;
+        const updated = {
+          ...prev,
+          [platform]: [...existing, { label: block.label, json: JSON.stringify(block.json, null, 2) }],
+        };
+        try { localStorage.setItem("savedTemplates", JSON.stringify(updated)); } catch { /* ignore */ }
+        return updated;
+      });
+    },
+    [currentState.customBlocks, platform]
+  );
+
+  const handleDeleteSavedTemplate = useCallback(
+    (label: string) => {
+      setSavedTemplates((prev) => {
+        const updated = {
+          ...prev,
+          [platform]: prev[platform].filter((t) => t.label !== label),
+        };
+        try { localStorage.setItem("savedTemplates", JSON.stringify(updated)); } catch { /* ignore */ }
+        return updated;
+      });
+    },
+    [platform]
+  );
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Header */}
       <header className="border-b border-s1-border bg-s1-black/90 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-9 h-9 rounded-lg bg-s1-purple flex items-center justify-center shadow-lg shadow-s1-purple-glow">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-white tracking-tight">
-                POgo
-              </h1>
-              <p className="text-xs text-s1-text-muted mt-0.5">
-                S1 Policy Override Generator
-              </p>
-            </div>
+        <div className="max-w-screen-2xl mx-auto px-6 py-2 flex items-center justify-between">
+          <div className="flex-1 flex justify-center">
+            <img src="/logo.png" alt="Override Ops" className="h-28 w-auto" />
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -218,6 +277,8 @@ export default function Home() {
           <CustomOverride
             onApplyTemplate={handleApplyTemplate}
             platform={platform}
+            savedTemplates={savedTemplates[platform]}
+            onDeleteSavedTemplate={handleDeleteSavedTemplate}
           />
         </div>
 
@@ -300,6 +361,8 @@ export default function Home() {
                   onRemoveOverride={() => {}}
                   onRemoveCustomBlock={handleRemoveCustomBlock}
                   onClearAll={handleClearAll}
+                  onMoveBlock={handleMoveBlock}
+                  onSaveAsTemplate={handleSaveAsTemplate}
                 />
                 <JsonExport overrides={{}} customBlocks={currentState.customBlocks} />
               </>
