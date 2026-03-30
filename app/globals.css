@@ -1,19 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --color-s1-black: #000000;
-  --color-s1-bg: #0a0a0a;
-  --color-s1-surface: #111111;
-  --color-s1-surface-hover: #1a1a1a;
-  --color-s1-border: #222222;
-  --color-s1-border-light: #2a2a2a;
-  --color-s1-purple: #7B2FBE;
-  --color-s1-purple-hover: #8E44CF;
-  --color-s1-purple-dim: rgba(123, 47, 190, 0.15);
-  --color-s1-purple-glow: rgba(123, 47, 190, 0.25);
-  --color-s1-text: #E8E8E8;
-  --color-s1-text-secondary: #AAAAAA;
-  --color-s1-text-muted: #777777;
+  --color-s1-black: #06070D;
+  --color-s1-bg: #0A0C15;
+  --color-s1-surface: #10131F;
+  --color-s1-surface-hover: #171B2C;
+  --color-s1-border: #1E2338;
+  --color-s1-border-light: #262D47;
+  --color-s1-purple: #7B4FE8;
+  --color-s1-purple-hover: #9268F8;
+  --color-s1-purple-dim: rgba(123, 79, 232, 0.15);
+  --color-s1-purple-glow: rgba(123, 79, 232, 0.4);
+  --color-s1-cyan: #22D3EE;
+  --color-s1-text: #E8EEFF;
+  --color-s1-text-secondary: #A8B4D8;
+  --color-s1-text-muted: #6B7A9E;
 }
 
 body {
@@ -44,6 +45,6 @@ body {
 
 /* Selection */
 ::selection {
-  background: rgba(123, 47, 190, 0.4);
+  background: rgba(123, 79, 232, 0.5);
   color: #fff;
 }
