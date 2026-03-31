@@ -14,6 +14,13 @@ interface CustomOverrideProps {
 
 const j = (obj: object) => JSON.stringify(obj, null, 2);
 
+const topKeys = (jsonStr: string): string => {
+  try {
+    const keys = Object.keys(JSON.parse(jsonStr));
+    return keys.length > 6 ? keys.slice(0, 6).join(", ") + ` +${keys.length - 6} more` : keys.join(", ");
+  } catch { return ""; }
+};
+
 type Template = { label: string; category: string; json: string };
 
 // ─── Windows Templates ───────────────────────────────────────────────
@@ -331,13 +338,17 @@ export default function CustomOverride({ onApplyTemplate, platform = "windows", 
               <span className="text-[10px] text-s1-text-muted uppercase tracking-wider font-semibold">{category}</span>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {filtered.filter((t) => t.category === category).sort((a, b) => a.label.localeCompare(b.label)).map((t) => (
-                  <button
-                    key={t.label}
-                    onClick={() => onApplyTemplate(t.label, t.json)}
-                    className="px-2.5 py-1 text-xs bg-s1-surface text-s1-text-secondary rounded hover:bg-s1-surface-hover hover:text-s1-text border border-s1-border transition-colors"
-                  >
-                    {t.label}
-                  </button>
+                  <div key={t.label} className="relative group/tip">
+                    <button
+                      onClick={() => onApplyTemplate(t.label, t.json)}
+                      className="px-2.5 py-1 text-xs bg-s1-surface text-s1-text-secondary rounded hover:bg-s1-surface-hover hover:text-s1-text border border-s1-border transition-colors"
+                    >
+                      {t.label}
+                    </button>
+                    <div className="absolute bottom-full left-0 mb-1.5 z-50 hidden group-hover/tip:block w-max max-w-[240px] px-2.5 py-1.5 bg-s1-black border border-s1-border-light rounded-lg shadow-lg pointer-events-none">
+                      <p className="text-[10px] text-s1-text-muted font-mono leading-relaxed break-words">{topKeys(t.json)}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>

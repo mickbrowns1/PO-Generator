@@ -29,6 +29,19 @@ export default function OverridePanel({
   const overrideEntries = Object.entries(overrides);
   const totalCount = overrideEntries.length + customBlocks.length;
 
+  // Conflict detection — find top-level keys used in more than one block
+  const keyCounts: Record<string, number> = {};
+  for (const block of customBlocks) {
+    for (const key of Object.keys(block.json)) {
+      keyCounts[key] = (keyCounts[key] || 0) + 1;
+    }
+  }
+  const conflictKeys = new Set(
+    Object.entries(keyCounts).filter(([, c]) => c > 1).map(([k]) => k)
+  );
+  const blockConflicts = (block: CustomBlock) =>
+    Object.keys(block.json).filter((k) => conflictKeys.has(k));
+
   if (totalCount === 0) {
     return (
       <div className="text-center py-8 text-s1-text-muted">
@@ -54,6 +67,17 @@ export default function OverridePanel({
           Clear All
         </button>
       </div>
+      {conflictKeys.size > 0 && (
+        <div className="mb-3 flex items-start gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+          <svg className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <p className="text-xs text-amber-400 font-medium">Key conflict — last block wins</p>
+            <p className="text-[10px] text-amber-400/70 font-mono mt-0.5 break-all">{[...conflictKeys].join(", ")}</p>
+          </div>
+        </div>
+      )}
       <div className="space-y-1">
         {/* Config overrides */}
         {overrideEntries.map(([path, newValue]) => {
@@ -111,11 +135,19 @@ export default function OverridePanel({
             className="group flex items-center gap-1.5 px-3 py-2 bg-s1-purple-dim border border-s1-purple/20 rounded-lg hover:bg-s1-purple/20 transition-colors"
           >
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-xs font-medium text-s1-text">{block.label}</span>
                 <span className="text-[10px] bg-s1-purple/20 text-s1-purple px-1.5 py-0.5 rounded flex-shrink-0">
                   block
                 </span>
+                {blockConflicts(block).length > 0 && (
+                  <span
+                    className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded flex-shrink-0"
+                    title={`Conflicts with another block on: ${blockConflicts(block).join(", ")}`}
+                  >
+                    ⚠ conflict
+                  </span>
+                )}
               </div>
               <div className="text-[10px] text-s1-text-muted font-mono mt-0.5 truncate">
                 {Object.keys(block.json).join(", ")}
