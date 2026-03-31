@@ -242,6 +242,8 @@ const MACOS_TEMPLATES: Template[] = [
   { label: "Keep-Alive Interval & Fail Count", category: "Communication", json: j({ keepAliveInterval: 30, keepAliveFailCount: 8 }) },
   { label: "Proxy Config", category: "Communication", json: j({ communicatorConfig: { forceProxy: true, telemetry: true } }) },
   { label: "DLP Settings (Support-only)", category: "Communication", json: j({ dlp: { enabled: false } }) },
+  // POC Templates
+  { label: "macOS POC Green PO", category: "POC Templates", json: j({"Firewall": {"AllowNetworkExtensionLoad": true}, "DeepVisibility": {"CollectShellScriptFileContent": 2}, "Detection": {"Scripts": {"applescript": true, "bash": true, "javascript": true, "perl": true, "python": true, "vba": true}, "StaticAIScanEnhanced": true, "StaticAIEnhancedDetection": true, "IgnoreSuspiciousTools": false, "DetectionExtensions": 1, "ProcessAllFileEventsFromSystemGroup": true}}) },
 ];
 
 const PLATFORM_TEMPLATES: Record<Platform, Template[]> = {
