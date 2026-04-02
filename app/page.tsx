@@ -43,6 +43,7 @@ export default function Home() {
   });
 
   const [showHelp, setShowHelp] = useState(true);
+  const [showConflictHelp, setShowConflictHelp] = useState(true);
   const [blockLabel, setBlockLabel] = useState("");
   const [blockJson, setBlockJson] = useState("");
   const [blockError, setBlockError] = useState("");
@@ -273,6 +274,44 @@ export default function Home() {
               onClick={() => setShowHelp(false)}
               className="text-s1-text-muted hover:text-s1-text-secondary transition-colors flex-shrink-0 mt-0.5"
               aria-label="Dismiss instructions"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Conflict resolution banner */}
+      {showConflictHelp && (
+        <div className="border-b border-s1-border bg-s1-bg flex-shrink-0">
+          <div className="px-6 py-3 flex items-start gap-6">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <svg className="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Conflict Resolution</span>
+            </div>
+            <div className="flex items-center gap-5 flex-1 flex-wrap">
+              {[
+                { step: "1", text: "A conflict occurs when two blocks set the same top-level key" },
+                { step: "2", text: "An amber warning appears on the block and in the conflict banner" },
+                { step: "3", text: "Click the key name or \u26a0 conflict badge to open the resolver" },
+                { step: "4", text: "Choose \u201cUse this value\u201d — the key is removed from all other blocks" },
+              ].map(({ step, text }) => (
+                <div key={step} className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[10px] font-bold text-amber-400 flex items-center justify-center flex-shrink-0">
+                    {step}
+                  </span>
+                  <span className="text-xs text-s1-text-muted">{text}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowConflictHelp(false)}
+              className="text-s1-text-muted hover:text-s1-text-secondary transition-colors flex-shrink-0 mt-0.5"
+              aria-label="Dismiss conflict resolution instructions"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
