@@ -172,6 +172,21 @@ export default function Home() {
     [currentState.customBlocks, platform]
   );
 
+  const handleResolveConflict = useCallback(
+    (key: string, winningBlockId: string) => {
+      updatePlatformState((prev) => ({
+        ...prev,
+        customBlocks: prev.customBlocks.map((b) => {
+          if (b.id === winningBlockId || !(key in b.json)) return b;
+          const updated = { ...b.json };
+          delete updated[key];
+          return { ...b, json: updated };
+        }),
+      }));
+    },
+    [updatePlatformState]
+  );
+
   const handleDeleteSavedTemplate = useCallback(
     (label: string) => {
       setSavedTemplates((prev) => {
@@ -363,6 +378,7 @@ export default function Home() {
                   onClearAll={handleClearAll}
                   onMoveBlock={handleMoveBlock}
                   onSaveAsTemplate={handleSaveAsTemplate}
+                  onResolveConflict={handleResolveConflict}
                 />
                 <JsonExport overrides={{}} customBlocks={currentState.customBlocks} />
               </>
